@@ -1,80 +1,81 @@
+import { GoogleGenAI, Type } from "@google/genai";
+import { getGenAI, generateContentWithFailover, demoClassifications } from "./_lib/gemini";
+
 export default async function handler(req: any, res: any) {
-  // Configuración de cabeceras CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method Not Allowed' });
-  }
+  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
 
   try {
-    const { image, mimeType } = req.body || {};
+    const { image } = req.body || {};
+    if (!image) return res.status(400).json({ error: "No se proporcionó ninguna imagen para analizar." });
 
-    if (!image) {
-      return res.status(400).json({ error: 'No se proporcionó la imagen en base64' });
+    let mimeType = "image/jpeg";
+    let base64Data = image;
+    if (image.startsWith("data:")) {
+      const match = image.match(/^data:([^;]+);base64,(.*)$/);
+      if (match) { mimeType = match[1]; base64Data = match[2]; }
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      return res.status(500).json({ error: 'Falta configurar GEMINI_API_KEY en Vercel' });
-    }
+    const ai = getGenAI();
 
-    const base64Data = image.includes(',') ? image.split(',')[1] : image;
-    const finalMimeType = mimeType || 'image/jpeg';
-
-    const promptText = `Analiza la imagen adjunta e identifica los residuos sólidos presentes.
-Responde estrictamente en formato JSON válido con la siguiente estructura:
-{
-  "detections": [
-    {
-      "label": "Nombre del residuo",
-      "category": "Organico | Reciclable | No Reciclable | Peligroso",
-      "confidence": 0.95,
-      "box_2d": [ymin, xmin, ymax, xmax]
-    }
-  ],
-  "recommendation": "Breve recomendación técnica de manejo ambiental"
-}`;
-
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              { text: promptText },
-              {
-                inline_data: {
-                  mime_type: finalMimeType,
-                  data: base64Data,
-                },
-              },
-            ],
-          },
+    const demoPayload = (warning?: string) => {
+      const shuffled = [...demoClassifications].sort(() => 0.5 - Math.random());
+      const selected = shuffled.slice(0, Math.floor(Math.random() * 2) + 2);
+      return {
+        detected: true,
+        classifications: selected,
+        nearbySpots: [
+          { title: "Punto Verde de Reciclaje Vecinal (Demo)", uri: "https://www.google.com/maps/search/recycling+center", address: "Av. de la Ecología s/n" },
+          { title: "Centro de Envases y PET Comunitario", uri: "https://www.google.com/maps/search/green+point+recycling", address: "Calle de la Sostenibilidad 42" },
         ],
-      }),
+        spotSearchText: `Centros de reciclaje para ${selected.map((i: any) => i.spanishMaterialName).join(" y ")}`,
+        isDemoMode: true,
+        apiWarning: warning || "El servidor está operando en Modo Demo porque no se configuró GEMINI_API_KEY.",
+      };
+    };
+
+    if (!ai) return res.status(200).json(demoPayload());
+
+    const imagePart = { inlineData: { mimeType, data: base64Data } };
+    const textPart = {
+      text: `Eres "Ambientalito"... [pega aquí, literal, el prompt largo de las líneas 305–326 de tu server.ts]`,
+    };
+
+    const response = await generateContentWithFailover(ai, {
+      model: "gemini-3.5-flash",
+      contents: { parts: [imagePart, textPart] },
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          // pega aquí, literal, el mismo responseSchema de las líneas 335–396 de tu server.ts
+        },
+      },
     });
 
-    const result = await response.json();
+    const resultText = response.text;
+    if (!resultText) throw new Error("No se obtuvo respuesta estructurada del modelo de visión.");
+    const classificationResult = JSON.parse(resultText.trim());
 
-    if (!response.ok) {
-      return res.status(response.status).json({ error: result.error?.message || 'Error en Gemini API' });
-    }
-
-    const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
-    const cleanedText = rawText.replace(/```json|```/g, '').trim();
-    const parsedData = JSON.parse(cleanedText);
-
-    return res.status(200).json(parsedData);
+    return res.status(200).json({
+      detected: classificationResult.detected,
+      classifications: classificationResult.classifications || [],
+      nearbySpots: [],
+      spotSearchText: "",
+      isDemoMode: false,
+    });
   } catch (error: any) {
-    return res.status(500).json({ error: 'Error procesando la petición', details: error.message });
+    const s = (error?.message || String(error)).toLowerCase();
+    const isQuota = s.includes("quota") || s.includes("exceeded") || s.includes("limit") || s.includes("free_tier") || s.includes("resource_exhausted") || s.includes("billing");
+    return res.status(200).json({
+      detected: true,
+      classifications: [],
+      isDemoMode: true,
+      apiWarning: isQuota
+        ? "Límite de la API de Gemini alcanzado. Ambientalito activó el modo de respaldo."
+        : "Alta demanda o error temporal. Ambientalito activó el modo de respaldo.",
+    });
   }
 }
