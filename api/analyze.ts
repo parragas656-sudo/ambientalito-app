@@ -1,5 +1,5 @@
 import { Type } from "@google/genai";
-import { getGenAI, generateContentWithFailover, demoClassifications } from "./_lib/gemini";
+import { getGenAI, generateContentWithFailover, demoClassifications } from "./_lib/gemini.js";
 
 export default async function handler(req: any, res: any) {
   res.setHeader('Access-Control-Allow-Origin', '*');
