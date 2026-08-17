@@ -88,4 +88,27 @@ export default async function handler(req: any, res: any) {
 
     return res.status(200).json({ text: replyText, isDemoMode: false });
 
-  } catch
+  } catch (error: any) {
+    console.warn("Backend chat failed (falling back to backup database):", error);
+    const lowerMsg = (message || "").toLowerCase();
+    let reply = "";
+
+    if (lowerMsg.includes("hola") || lowerMsg.includes("buen")) {
+      reply = "¡Hola, guardián de la Tierra! 🐸🍀 Desde mi oficina de Ingeniería Ambiental (en modo de respaldo local debido a alta demanda de la Red de IA), te doy una cálida bienvenida. ¿Qué inquietud ecológica o duda sobre gestión de residuos tienes hoy? ¡Juntos cuidaremos nuestro hermoso planetita! 🌍♻️";
+    } else if (lowerMsg.includes("plástico") || lowerMsg.includes("pet") || lowerMsg.includes("botella")) {
+      reply = "¡Excelente consulta técnica de respaldo! 🥤🐸 Como tu Ingeniero Ambiental Senior de cabecera, te comento que el plástico PET tiene un altísimo porcentaje de reciclabilidad. Al reciclarlo evitamos refinar petróleo virgen y ahorramos hasta un 84% de energía. Recuerda: ¡vaciado, aplastado, tapado e introducido al contenedor amarillo! ♻️🍀";
+    } else if (lowerMsg.includes("vidrio") || lowerMsg.includes("cristal")) {
+      reply = "¡El vidrio es asombroso, colega! 🍾🐸 Es un material con un ciclo de reciclaje infinito al 100% sin perder un ápice de sus propiedades físico-químicas primarias. Al fundirlo en los hornos a menor temperatura, reducimos las emisiones atmosféricas de CO2 exponencialmente. ¡Siempre al contenedor verde, sin chapas! 🟢✨";
+    } else if (lowerMsg.includes("papel") || lowerMsg.includes("cartón") || lowerMsg.includes("caja")) {
+      reply = "¡Excelente enfoque de circularidad! 📦🌱 Reciclar cartón o papel evita la tala inmoderada y un consumo hídrico masivo en la producción de celulosa virgen. Por cada tonelada salvamos 17 árboles medianos y miles de litros de agua dulce. ¡Asegúrate siempre de que estén secos y limpios para que no se contaminen! 🌳💚";
+    } else if (lowerMsg.includes("metal") || lowerMsg.includes("lata") || lowerMsg.includes("aluminio")) {
+      reply = "¡Ah, la termodinámica del aluminio! 🥫⚡ Desde la perspectiva de la ingeniería, fundir aluminio reciclado requiere un increíble 95% menos de energía que extraer bauxita y refinarla de cero. ¡Esta lata que ves hoy podría volver a tus manos reciclada en forma de nueva lata en solo dos meses! Siempre clasifícala con los metales. 🍀♻️";
+    } else if (lowerMsg.includes("compost") || lowerMsg.includes("orgánico") || lowerMsg.includes("fruta") || lowerMsg.includes("comida")) {
+      reply = "¡La nutrición de la Madre Tierra! 🍏🐸 Los restos orgánicos tirados al basurero común se descomponen sin oxígeno produciendo gas metano (muy perjudicial). Al compostarlos, realizamos un proceso controlado que genera abono orgánico premium estructurador de suelos. ¡Devolvamos amor a la Pachamama! 🌻🌱";
+    } else {
+      reply = "¡Esa es una pregunta sumamente interesante desde la perspectiva de la ingeniería de residuos! 🐸🍀 Debido a una alta demanda temporal en mi red neuronal remota (error 503), me encuentro respondiéndote desde mi unidad de respaldo regional. Te aconsejo seguir la jerarquía de las 3R: primero Reducir, luego Reutilizar para prolongar la vida útil, y finalmente Reciclar de manera limpia. ¿Qué otra duda ecológica puedo ayudarte a resolver? 🌱✨";
+    }
+
+    return res.status(200).json({ text: reply, isDemoMode: true });
+  }
+}
