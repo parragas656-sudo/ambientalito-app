@@ -727,7 +727,7 @@ export default function App() {
         clearInterval(stepInterval);
         console.error("Simulation error in local protocol:", simErr);
         setErrorMessage("Ocurrió un contratiempo menor en el procesamiento local offline: " + simErr.message);
-      } finally {
+      } font-medium {
         setIsAnalyzing(false);
       }
       return;
@@ -1245,13 +1245,267 @@ export default function App() {
             onAddSimulatedScan={(newItem) => updateAndSaveHistory([newItem, ...history])} 
             onClearHistory={() => updateAndSaveHistory([])} 
           />
+        ) : activeTab === "calculator" ? (
+          /* MANUAL CALCULATOR WORKSPACE */
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            <section className="lg:col-span-7 space-y-6">
+              <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 shadow-2xl relative overflow-hidden">
+                {/* Header */}
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-xl">
+                      <Calculator className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h2 className="text-sm font-bold font-display text-white">Calculadora Manual de Impacto</h2>
+                      <p className="text-[11px] text-slate-400">Estima la huella ecológica y valor económico de tus residuos sin foto.</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Category Selector */}
+                <div className="mb-6">
+                  <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-2.5 block font-mono">
+                    1. Selecciona la Categoría de Residuo:
+                  </label>
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                    {(["plastic", "glass", "metal", "paper", "organic"] as const).map((cat) => {
+                      const catTheme = CATEGORY_THEMES[cat];
+                      const isSelected = manualCategory === cat;
+                      return (
+                        <button
+                          key={cat}
+                          onClick={() => {
+                            setManualCategory(cat);
+                            const defaultPreset = MANUAL_PRESETS[cat][0];
+                            if (defaultPreset) {
+                              setManualItemName(defaultPreset.name);
+                              setManualUnitWeight(defaultPreset.weight);
+                            }
+                          }}
+                          className={`p-3 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center gap-1.5 ${
+                            isSelected
+                              ? `${catTheme.bg} ${catTheme.border} text-white shadow-lg scale-105`
+                              : "bg-white/5 border-white/5 text-slate-400 hover:bg-white/10 hover:text-slate-200"
+                          }`}
+                        >
+                          <span className="text-xl">{catTheme.icon}</span>
+                          <span className="text-[10px] font-bold font-display">{catTheme.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Presets Grid */}
+                <div className="mb-6">
+                  <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-2.5 block font-mono">
+                    2. Elige un Elemento Predeterminado:
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {MANUAL_PRESETS[manualCategory].map((preset, idx) => {
+                      const isSelected = manualItemName === preset.name && manualUnitWeight === preset.weight;
+                      return (
+                        <button
+                          key={idx}
+                          onClick={() => {
+                            setManualItemName(preset.name);
+                            setManualUnitWeight(preset.weight);
+                          }}
+                          className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between text-xs ${
+                            isSelected
+                              ? "bg-emerald-500/20 border-emerald-500/50 text-white font-semibold"
+                              : "bg-white/5 border-white/5 text-slate-300 hover:bg-white/10"
+                          }`}
+                        >
+                          <span>{preset.name}</span>
+                          <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-500/20">
+                            {preset.weight}g
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Custom Weights & Quantities */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 bg-slate-900/60 p-4 rounded-2xl border border-white/5">
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 block font-mono">
+                      Nombre del Elemento
+                    </label>
+                    <input
+                      type="text"
+                      value={manualItemName}
+                      onChange={(e) => setManualItemName(e.target.value)}
+                      className="w-full bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500/50 transition"
+                      placeholder="Ej. Envase o residuo"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 block font-mono">
+                      Peso Unitario (Gramos)
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={manualUnitWeight}
+                      onChange={(e) => setManualUnitWeight(Math.max(1, Number(e.target.value)))}
+                      className="w-full bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-emerald-500/50 transition"
+                    />
+                  </div>
+                </div>
+
+                {/* Quantity Counter */}
+                <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-emerald-950/20 border border-emerald-500/20 p-4 rounded-2xl">
+                  <div>
+                    <h4 className="text-xs font-bold font-display text-white">Cantidad a Registrar</h4>
+                    <p className="text-[10px] text-slate-400">Aumenta o disminuye el número de unidades completas.</p>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => setManualQuantity(Math.max(0, manualQuantity - 1))}
+                      className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 flex items-center justify-center text-white transition cursor-pointer"
+                    >
+                      <Minus className="w-4 h-4" />
+                    </button>
+                    <span className="text-lg font-black font-mono text-emerald-400 min-w-[2rem] text-center">
+                      {manualQuantity}
+                    </span>
+                    <button
+                      onClick={() => setManualQuantity(manualQuantity + 1)}
+                      className="w-9 h-9 rounded-xl bg-emerald-600 hover:bg-emerald-550 border border-emerald-500/30 flex items-center justify-center text-white transition cursor-pointer shadow-md shadow-emerald-950/30"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Save Button & Success Toast */}
+                <button
+                  onClick={handleSaveManualRecord}
+                  disabled={manualQuantity <= 0}
+                  className={`w-full py-3.5 rounded-2xl font-bold font-display text-xs tracking-wider uppercase transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer ${
+                    manualQuantity > 0
+                      ? "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-550 hover:to-teal-550 text-white shadow-xl shadow-emerald-950/30 hover:scale-[1.01]"
+                      : "bg-white/5 border border-white/5 text-slate-500 cursor-not-allowed"
+                  }`}
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  <span>Guardar Registro en el Historial</span>
+                </button>
+
+                {showSuccessToast && (
+                  <div className="mt-4 p-3.5 bg-emerald-500/15 border border-emerald-500/30 rounded-2xl text-emerald-300 text-xs font-medium flex items-center gap-2 animate-fade-in shadow-lg">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span>¡Registro guardado exitosamente en tu historial ecológico!</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Dynamic Step-by-Step Disposal Guide for Manual Category */}
+              <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 shadow-xl space-y-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-4 bg-emerald-500 rounded-full" />
+                  <h3 className="text-sm font-bold font-display text-white">
+                    Pasos Recomendados de Separación ({CATEGORY_THEMES[manualCategory]?.label})
+                  </h3>
+                </div>
+
+                <div className="space-y-2.5">
+                  {DISPOSAL_STEPS[manualCategory].map((step, idx) => {
+                    const isChecked = !!manualCompletedSteps[idx];
+                    return (
+                      <div
+                        key={idx}
+                        onClick={() => setManualCompletedSteps(prev => ({ ...prev, [idx]: !prev[idx] }))}
+                        className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-start gap-3 ${
+                          isChecked
+                            ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-200"
+                            : "bg-slate-900/40 border-white/5 text-slate-300 hover:bg-white/5"
+                        }`}
+                      >
+                        <div className={`w-5 h-5 rounded-lg border flex items-center justify-center shrink-0 mt-0.5 transition ${
+                          isChecked ? "bg-emerald-500 border-emerald-400 text-slate-950" : "border-white/20 bg-slate-950"
+                        }`}>
+                          {isChecked && <CheckCircle2 className="w-3.5 h-3.5 stroke-[3]" />}
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-bold font-display text-white">{step.title}</h4>
+                          <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">{step.desc}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </section>
+
+            {/* RIGHT PANEL: Live Calculation Summary */}
+            <section className="lg:col-span-5 space-y-6 sticky top-24">
+              <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 shadow-2xl space-y-5 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+
+                <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-400">
+                    Resumen Estimado
+                  </span>
+                  <span className="text-[11px] font-semibold text-slate-400 bg-white/5 px-2.5 py-1 rounded-full border border-white/5">
+                    {manualQuantity} unidades
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-slate-900/80 border border-white/5 p-4 rounded-2xl">
+                    <span className="text-[9px] font-mono font-semibold uppercase text-slate-400 tracking-wider block">Peso Total</span>
+                    <span className="text-lg font-black font-mono text-white mt-1 block">{calculatedManualWeight}g</span>
+                  </div>
+
+                  <div className="bg-emerald-950/30 border border-emerald-500/20 p-4 rounded-2xl">
+                    <span className="text-[9px] font-mono font-semibold uppercase text-emerald-400 tracking-wider block">Ahorro CO₂</span>
+                    <span className="text-lg font-black font-mono text-emerald-300 mt-1 block">{Math.round(calculatedManualCo2)}g</span>
+                  </div>
+
+                  <div className="bg-slate-900/80 border border-white/5 p-4 rounded-2xl">
+                    <span className="text-[9px] font-mono font-semibold uppercase text-slate-400 tracking-wider block">Equiv. Auto</span>
+                    <span className="text-sm font-bold font-mono text-amber-300 mt-1 block">{calculatedManualKm} km</span>
+                  </div>
+
+                  <div className="bg-slate-900/80 border border-white/5 p-4 rounded-2xl">
+                    <span className="text-[9px] font-mono font-semibold uppercase text-slate-400 tracking-wider block">Equiv. Árboles</span>
+                    <span className="text-sm font-bold font-mono text-teal-300 mt-1 block">{calculatedManualTrees} días</span>
+                  </div>
+                </div>
+
+                <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-2xl flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] font-bold font-display uppercase tracking-wider text-emerald-300 block">Estímulo Económico Estimado</span>
+                    <span className="text-[9px] text-slate-400 block mt-0.5">Basado en precios de acopio en Ecuador (${basePricePerKg.toFixed(2)}/kg)</span>
+                  </div>
+                  <span className="text-xl font-black font-mono text-emerald-400 bg-emerald-950/60 px-3 py-1.5 rounded-xl border border-emerald-500/30">
+                    ${calculatedManualEarnings >= 0.01 ? calculatedManualEarnings.toFixed(2) : calculatedManualEarnings.toFixed(3)}
+                  </span>
+                </div>
+
+                {/* Sapo Speech Bubble */}
+                <div className="bg-teal-950/30 border border-teal-500/20 p-4 rounded-2xl flex items-start gap-3">
+                  <SapoLogo className="w-8 h-8 shrink-0 mt-0.5" />
+                  <p className="text-[11px] text-teal-200 italic leading-relaxed">
+                    "¡Sumando grano a grano hacemos la diferencia! Registra tus residuos periódicamente para llevar un control estricto de tu impacto ambiental positivo."
+                  </p>
+                </div>
+              </div>
+            </section>
+          </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           
           {/* LEFT PANEL: SCANNER + ANALYSIS RESULTS (8 Columns) */}
           <section className="lg:col-span-7 space-y-6">
             
-            {activeTab === "scanner" ? (
+            {activeTab === "scanner" && (
               <>
                 {/* Active Workspace Container */}
                 <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 shadow-2xl overflow-hidden relative">
@@ -1611,517 +1865,181 @@ export default function App() {
                             </div>
 
                             {/* Bento Grid: 4 Ecological Impact Metrics */}
-                            <div className="space-y-3">
-                              <h3 className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 mb-1 font-mono">
-                                Reporte de Impacto Ambiental (Cálculos de Ambientalito)
-                              </h3>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                
-                                {/* 1. Tiempo de degradación */}
-                                <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-2xl p-4.5 shadow-lg flex items-start gap-3 hover:border-white/20 transition-all duration-300">
-                                  <div className="p-3 bg-teal-500/20 border border-teal-500/30 rounded-xl text-teal-350 shrink-0">
-                                    <Clock className="w-5 h-5 text-teal-350" />
-                                  </div>
-                                  <div>
-                                    <h4 className="text-[10px] uppercase font-bold text-teal-300 tracking-wider font-mono">Tiempo de Degradación</h4>
-                                    <p className="text-sm font-bold font-display text-white mt-0.5">{activeClassification.degradationTime}</p>
-                                    <p className="text-[10px] text-slate-400 mt-0.5 leading-relaxed">
-                                      Tiempo que tarda en descomponerse naturalmente si se descarta de forma irresponsable.
-                                    </p>
-                                  </div>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="bg-slate-900/60 border border-white/5 p-4 rounded-2xl flex flex-col justify-between">
+                                <div className="flex items-center gap-2 text-slate-400 mb-2">
+                                  <Clock className="w-4 h-4 text-amber-400" />
+                                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider">Degradación</span>
                                 </div>
+                                <span className="text-base font-black font-display text-amber-300">
+                                  {activeClassification.degradationTime}
+                                </span>
+                              </div>
 
-                                {/* 2. Peso Estimado */}
-                                <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-2xl p-4.5 shadow-lg flex items-start gap-3 hover:border-white/20 transition-all duration-300">
-                                  <div className="p-3 bg-purple-500/20 border border-purple-500/30 rounded-xl text-purple-350 shrink-0">
-                                    <Scale className="w-5 h-5 text-purple-350" />
-                                  </div>
-                                  <div>
-                                    <h4 className="text-[10px] uppercase font-bold text-purple-300 tracking-wider font-mono">Peso del Residuo</h4>
-                                    <p className="text-sm font-bold font-display text-white mt-0.5">~{weightGrams} gramos</p>
-                                    <p className="text-[10px] text-slate-400 mt-0.5 leading-relaxed">
-                                      Peso neto aproximado de este artículo para calcular las equivalencias de CO₂ evitado.
-                                    </p>
-                                  </div>
+                              <div className="bg-slate-900/60 border border-white/5 p-4 rounded-2xl flex flex-col justify-between">
+                                <div className="flex items-center gap-2 text-slate-400 mb-2">
+                                  <TrendingUp className="w-4 h-4 text-emerald-400" />
+                                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider">Ahorro CO₂</span>
                                 </div>
+                                <span className="text-base font-black font-display text-emerald-300">
+                                  {co2OffsetEstimate}
+                                </span>
+                              </div>
 
-                                {/* 3. Mitigación CO2 */}
-                                <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-2xl p-4.5 shadow-lg flex items-start gap-3 hover:border-white/20 transition-all duration-300">
-                                  <div className="p-3 bg-emerald-500/20 border border-emerald-500/30 rounded-xl text-emerald-350 shrink-0">
-                                    <Leaf className="w-5 h-5 text-emerald-305" />
-                                  </div>
-                                  <div>
-                                    <h4 className="text-[10px] uppercase font-bold text-emerald-300 tracking-wider font-mono">Gases de Efecto Invernadero</h4>
-                                    <p className="text-sm font-bold font-display text-white mt-0.5">{co2OffsetEstimate}</p>
-                                    <p className="text-[9px] text-slate-400 mt-1 leading-normal">
-                                      Multiplicador científico: {activeClassification.recyclingCategory === "plastic" && "Plástico: 1.5x peso"}
-                                      {activeClassification.recyclingCategory === "metal" && "Can/Metal: 9.0x peso"}
-                                      {activeClassification.recyclingCategory === "paper" && "Papel/Cartón: 0.9x peso"}
-                                      {activeClassification.recyclingCategory === "glass" && "Vidrio: 0.3x peso"}
-                                      {activeClassification.recyclingCategory !== "plastic" && activeClassification.recyclingCategory !== "metal" && activeClassification.recyclingCategory !== "paper" && activeClassification.recyclingCategory !== "glass" && "Orgánico/Otros: 0.2x peso"}
-                                    </p>
-                                  </div>
+                              <div className="bg-slate-900/60 border border-white/5 p-4 rounded-2xl flex flex-col justify-between">
+                                <div className="flex items-center gap-2 text-slate-400 mb-2">
+                                  <Car className="w-4 h-4 text-blue-400" />
+                                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider">Equiv. Auto</span>
                                 </div>
+                                <span className="text-base font-black font-display text-blue-300">
+                                  ~{equivalentKm} km
+                                </span>
+                              </div>
 
-                                {/* 4. Equivalencias */}
-                                <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-2xl p-4.5 shadow-lg flex items-start gap-3 hover:border-white/20 transition-all duration-300">
-                                  <div className="p-3 bg-sky-500/20 border border-sky-500/30 rounded-xl text-sky-350 shrink-0">
-                                    <TreePine className="w-5 h-5 text-sky-350" />
-                                  </div>
-                                  <div>
-                                    <h4 className="text-[10px] uppercase font-bold text-sky-300 tracking-wider font-mono">Huella Verde Equivalente</h4>
-                                    <div className="mt-1 space-y-1">
-                                      <div className="flex items-center gap-1.5 text-xs font-semibold text-white">
-                                        <Car className="w-3.5 h-3.5 text-slate-400" />
-                                        <span>{equivalentKm} km</span>
-                                        <span className="text-[9.5px] text-slate-400 font-normal">en auto evitados</span>
-                                      </div>
-                                      <div className="flex items-center gap-1.5 text-xs font-semibold text-white">
-                                        <TreePine className="w-3.5 h-3.5 text-emerald-450" />
-                                        <span>{equivalentTrees} días-árbol</span>
-                                        <span className="text-[9.5px] text-slate-400 font-normal">de absorción diaria</span>
-                                      </div>
-                                    </div>
-                                    <p className="text-[8.5px] text-slate-400 mt-1 leading-normal">
-                                      Fórmulas: {co2OffsetGrams}g CO₂ ≈ {equivalentKm}km conducción o {equivalentTrees} días de respiración de árboles.
-                                    </p>
-                                  </div>
+                              <div className="bg-slate-900/60 border border-white/5 p-4 rounded-2xl flex flex-col justify-between">
+                                <div className="flex items-center gap-2 text-slate-400 mb-2">
+                                  <TreePine className="w-4 h-4 text-teal-400" />
+                                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider">Absorción Árbol</span>
                                 </div>
-
+                                <span className="text-base font-black font-display text-teal-300">
+                                  ~{equivalentTrees} días
+                                </span>
                               </div>
                             </div>
 
-                            {/* Step-by-Step interactive instructions */}
-                            <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 shadow-lg">
-                              <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-400 mb-4 flex items-center justify-between">
-                                <span className="flex items-center gap-1.5">
-                                  <span>Plan de Acción de 3 Pasos</span>
+                            {/* Dynamic Checkable Step-by-Step Instructions */}
+                            <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 shadow-xl space-y-4">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-1.5 h-4 bg-emerald-500 rounded-full" />
+                                  <h3 className="text-sm font-bold font-display text-white">
+                                    Guía Interactiva de Separación
+                                  </h3>
+                                </div>
+                                <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/40 px-2.5 py-1 rounded-full border border-emerald-500/20">
+                                  {Object.keys(completedSteps).filter(k => k.startsWith(`${activeItemIndex}-`) && completedSteps[k]).length} de {activeClassification.instructions?.length || 0} completados
                                 </span>
-                                <span className="text-[10px] font-mono text-slate-400 flex items-center gap-1 normal-case leading-none">
-                                  <Info className="w-3.5 h-3.5 text-slate-400" />
-                                  Marca para completar
-                                </span>
-                              </h3>
-                              <div className="space-y-3">
-                                {activeClassification.instructions?.map((step, idx) => {
+                              </div>
+
+                              <div className="space-y-2.5">
+                                {activeClassification.instructions?.map((inst, idx) => {
                                   const stepKey = `${activeItemIndex}-${idx}`;
-                                  const isCompleted = !!completedSteps[stepKey];
+                                  const isChecked = !!completedSteps[stepKey];
                                   return (
-                                    <div 
-                                      key={idx} 
+                                    <div
+                                      key={idx}
                                       onClick={() => toggleStepCompleted(idx)}
-                                      className={`p-3.5 rounded-xl border flex gap-3 cursor-pointer select-none transition-all duration-200 ${
-                                        isCompleted 
-                                          ? "bg-white/5 border-white/5 text-slate-500 line-through" 
-                                          : "bg-emerald-500/5 border-white/10 text-slate-200 hover:border-emerald-500/30"
+                                      className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-start gap-3 ${
+                                        isChecked
+                                          ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-200"
+                                          : "bg-slate-900/40 border-white/5 text-slate-300 hover:bg-white/5"
                                       }`}
                                     >
-                                      <div className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 mt-0.5 transition ${
-                                        isCompleted 
-                                          ? "bg-emerald-600 border-emerald-600 text-white" 
-                                          : "bg-white/5 border-white/20 text-transparent"
+                                      <div className={`w-5 h-5 rounded-lg border flex items-center justify-center shrink-0 mt-0.5 transition ${
+                                        isChecked ? "bg-emerald-500 border-emerald-400 text-slate-950" : "border-white/20 bg-slate-950"
                                       }`}>
-                                        <CheckCircle2 className="w-3.5 h-3.5 text-current stroke-[3px]" />
+                                        {isChecked && <CheckCircle2 className="w-3.5 h-3.5 stroke-[3]" />}
                                       </div>
-                                      <p className="text-xs leading-relaxed font-sans font-medium">{step}</p>
+                                      <p className="text-xs leading-relaxed font-sans font-medium">
+                                        {inst}
+                                      </p>
                                     </div>
                                   );
                                 })}
                               </div>
                             </div>
-
-                            {/* Benefits Section */}
-                            <div className="bg-emerald-500/10 backdrop-blur-2xl border border-emerald-500/20 rounded-3xl p-6 shadow-lg relative overflow-hidden">
-                              <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none" />
-                              <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-300 mb-2.5 flex items-center gap-1.5 font-display">
-                                <TrendingUp className="w-4 h-4 text-emerald-400" />
-                                Beneficio Ecológico Circular
-                              </h3>
-                              <p className="text-xs leading-relaxed text-slate-200 font-sans">
-                                {activeClassification.benefits}
-                              </p>
-                            </div>
                           </div>
                         );
                       })()}
-
                     </>
                   )}
                 </motion.div>
               )}
             </AnimatePresence>
             </>
-            ) : (
-              <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 shadow-2xl relative overflow-hidden space-y-6 animate-fade-in">
-                {/* Category Glow color background */}
-                <div 
-                  className="absolute top-0 right-0 w-32 h-32 rounded-full blur-[80px] opacity-15 pointer-events-none transition-all duration-500"
-                  style={{ backgroundColor: manualCategory === "plastic" ? "#3b82f6" : manualCategory === "glass" ? "#14b8a6" : manualCategory === "metal" ? "#64748b" : manualCategory === "paper" ? "#f59e0b" : "#10b981" }}
-                />
-
-                {/* Toast notifier on success */}
-                {showSuccessToast && (
-                  <div className="p-4 bg-emerald-550/15 border border-emerald-500/30 text-emerald-200 rounded-2xl flex items-start gap-3 animate-pulse shadow-lg">
-                    <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
-                    <div>
-                      <h4 className="text-xs font-bold font-display text-white">¡Residuo registrado con éxito! 🌱</h4>
-                      <p className="text-[10px] mt-0.5 leading-relaxed text-emerald-300">
-                        El impacto ecológico de {manualQuantity}x {manualItemName} se ha sumado a tus estadísticas acumuladas en el panel derecho.
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Header title */}
-                <div className="flex items-start gap-4">
-                  <div className={`p-3 rounded-2xl border flex items-center justify-center transition-all ${CATEGORY_THEMES[manualCategory]?.bg || "bg-emerald-500/10"} ${CATEGORY_THEMES[manualCategory]?.border || "border-emerald-500/30"} ${CATEGORY_THEMES[manualCategory]?.text || "text-emerald-200"}`}>
-                    <Calculator className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-bold font-display text-white">Calculadora de Impacto Circular</h3>
-                    <p className="text-xs text-slate-450 font-sans mt-0.5 leading-relaxed">
-                      Determina el CO₂ evitado estimando el tipo, pesaje y unidades de tus residuos a la mano.
-                    </p>
-                  </div>
-                </div>
-
-                {/* 1. Category selector */}
-                <div className="space-y-2.5">
-                  <label className="text-[10px] font-mono tracking-wider uppercase font-semibold text-slate-450">1. Tipo de Residuo</label>
-                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-                    {(["plastic", "glass", "metal", "paper", "organic"] as const).map((cat) => {
-                      const theme = CATEGORY_THEMES[cat];
-                      const isSelected = manualCategory === cat;
-                      return (
-                        <button
-                          key={cat}
-                          type="button"
-                          onClick={() => {
-                            setManualCategory(cat);
-                            const firstPreset = MANUAL_PRESETS[cat][0];
-                            if (firstPreset) {
-                              setManualItemName(firstPreset.name);
-                              setManualUnitWeight(firstPreset.weight);
-                            }
-                          }}
-                          className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all text-center cursor-pointer ${
-                            isSelected 
-                              ? `${theme.bg} ${theme.border} ${theme.text} scale-[1.02] ring-1 ring-emerald-500/20`
-                              : "bg-white/5 border-white/5 text-slate-400 hover:bg-white/10 hover:text-slate-200"
-                          }`}
-                        >
-                          <span className="text-lg leading-none">{theme.icon}</span>
-                          <span className="text-[10px] font-bold tracking-tight">{theme.label.split(" ")[0]}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* 2. Presets & details */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  {/* Left sub-column: presets list & custom description */}
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-mono tracking-wider uppercase font-semibold text-slate-450">2. Preset de Residuos Comunes</label>
-                      <div className="flex flex-wrap gap-1.5 p-2 bg-slate-950/50 rounded-xl border border-white/5 max-h-[140px] overflow-y-auto custom-scrollbar">
-                        {MANUAL_PRESETS[manualCategory].map((preset, idx) => {
-                          const isPresetSelected = manualItemName === preset.name && manualUnitWeight === preset.weight;
-                          return (
-                            <button
-                              key={idx}
-                              type="button"
-                              onClick={() => {
-                                setManualItemName(preset.name);
-                                setManualUnitWeight(preset.weight);
-                              }}
-                              className={`text-[9.5px] px-2.5 py-1.5 rounded-lg border font-medium transition cursor-pointer select-none leading-tight ${
-                                isPresetSelected
-                                  ? "bg-emerald-550 border-emerald-500 text-white shadow-md shadow-emerald-900/10"
-                                  : "bg-white/5 border-white/5 text-slate-350 hover:bg-white/10"
-                              }`}
-                            >
-                              {preset.name.split(" (")[0]} ({preset.weight}g)
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-mono text-slate-400">Nombre personalizado (opcional)</label>
-                      <input
-                        type="text"
-                        value={manualItemName}
-                        onChange={(e) => setManualItemName(e.target.value)}
-                        placeholder="Ej. Mi residuo limpio"
-                        className="w-full text-xs font-semibold bg-slate-950/60 border border-white/10 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-all font-sans"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Right sub-column: sliders & quantities */}
-                  <div className="space-y-4">
-                    {/* Weight sliders */}
-                    <div className="space-y-20 flex flex-col justify-between h-auto gap-2">
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <label className="text-[10px] font-mono text-slate-400">Peso Unitario Estimado</label>
-                          <span className="text-xs font-mono font-bold text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded">
-                            {manualUnitWeight} g
-                          </span>
-                        </div>
-                        <input
-                          type="range"
-                          min="1"
-                          max="1000"
-                          value={manualUnitWeight}
-                          onChange={(e) => setManualUnitWeight(parseInt(e.target.value, 10))}
-                          className="w-full h-1 bg-slate-900 rounded-lg appearance-none cursor-ew-resize accent-emerald-550"
-                        />
-                      </div>
-
-                      <div className="flex items-center gap-2 bg-slate-950/30 p-2.5 border border-white/5 rounded-xl">
-                        <Scale className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                        <span className="text-[10px] text-slate-400 leading-tight">
-                          Peso total: <strong className="text-white font-mono">{calculatedManualWeight}g</strong> ({manualQuantity}x × {manualUnitWeight}g)
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Quantity selectors stepper */}
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-mono text-slate-400">Cantidad de Unidades</label>
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setManualQuantity(Math.max(0, manualQuantity - 1))}
-                          className="w-10 h-10 rounded-xl border border-white/10 bg-white/5 text-slate-200 hover:bg-white/10 flex items-center justify-center transition cursor-pointer shrink-0"
-                        >
-                          <Minus className="w-3.5 h-3.5" />
-                        </button>
-                        
-                        <input
-                          type="number"
-                          min="0"
-                          max="1000"
-                          value={manualQuantity === 0 ? "" : manualQuantity}
-                          placeholder="0"
-                          onChange={(e) => {
-                            const val = e.target.value === "" ? 0 : parseInt(e.target.value, 10);
-                            if (!isNaN(val)) {
-                              setManualQuantity(Math.max(0, val));
-                            }
-                          }}
-                          className="flex-1 text-center font-mono font-bold text-xs bg-slate-950/60 border border-white/10 rounded-xl py-2 text-white focus:outline-none focus:border-emerald-500 transition-all font-sans"
-                        />
-
-                        <button
-                          type="button"
-                          onClick={() => setManualQuantity(manualQuantity + 1)}
-                          className="w-10 h-10 rounded-xl border border-white/10 bg-white/5 text-slate-200 hover:bg-white/10 flex items-center justify-center transition cursor-pointer shrink-0"
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-
-                  </div>
-                </div>
-
-                {/* Calculated savings metrics results layout panel */}
-                <div className="p-4.5 rounded-2xl bg-slate-950/60 border border-white/5 divide-y divide-white/10 space-y-3.5">
-                  <div className="pb-3 flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-350">Reducción CO₂ Calculada:</span>
-                    <div className="text-right">
-                      <span className="text-base font-black text-emerald-400 font-mono tracking-tight flex items-center gap-1 justify-end animate-pulse-once">
-                        <Leaf className="w-4 h-4 text-emerald-400" />
-                        ~{Math.round(calculatedManualCo2)} g CO₂
-                      </span>
-                      <span className="text-[9.5px] text-slate-400 block leading-tight mt-0.5">de gases de invernaderos mitigados</span>
-                    </div>
-                  </div>
-
-                  {/* Estimación de ganancia económica */}
-                  <div className="py-3 flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-350 flex flex-col items-start">
-                      <span>Ganancia Estimada (Ecuador):</span>
-                      <span className="text-[9.5px] text-slate-450 font-normal mt-0.5 font-mono">Precio: ${basePricePerKg.toFixed(2)} / kilo</span>
-                    </span>
-                    <div className="text-right">
-                      {basePricePerKg > 0 ? (
-                        <>
-                          <span className="text-base font-black text-cyan-400 font-mono tracking-tight flex items-center gap-1 justify-end">
-                            <Coins className="w-4 h-4 text-cyan-400 animate-pulse" />
-                            ${calculatedManualEarnings >= 0.01 ? calculatedManualEarnings.toFixed(2) : calculatedManualEarnings.toFixed(3)} USD
-                          </span>
-                          <span className="text-[9.5px] text-slate-400 block leading-tight mt-0.5">al venderlo en centros de acopio</span>
-                        </>
-                      ) : (
-                        <>
-                          <span className="text-xs font-bold text-violet-400 font-sans tracking-tight flex items-center gap-1 justify-end">
-                            Compostaje Doméstico 🌱
-                          </span>
-                          <span className="text-[9.5px] text-slate-400 block leading-tight mt-0.5">No comercializable directo</span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="pt-3.5 grid grid-cols-3 gap-3">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-1.5 text-[10px] text-slate-450 font-medium">
-                        <Scale className="w-3.5 h-3.5 text-slate-500" />
-                        <span>Masa total</span>
-                      </div>
-                      <p className="text-xs font-bold text-white font-mono">{calculatedManualWeight} g</p>
-                    </div>
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-1.5 text-[10px] text-slate-450 font-medium">
-                        <Car className="w-3.5 h-3.5 text-slate-500" />
-                        <span>Auto evitado</span>
-                      </div>
-                      <p className="text-xs font-bold text-white font-mono">~{calculatedManualKm} km</p>
-                    </div>
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-1.5 text-[10px] text-slate-450 font-medium">
-                        <TreePine className="w-3.5 h-3.5 text-slate-500" />
-                        <span>Días Árbol</span>
-                      </div>
-                      <p className="text-xs font-bold text-white font-mono">~{calculatedManualTrees} d</p>
-                    </div>
-                  </div>
-
-                  <div className="pt-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1 text-[10.5px] text-slate-400">
-                    <span className="flex items-center gap-1 text-slate-450">
-                      <span>⏱️ Degradación en vertedero:</span>
-                      <strong className="text-amber-300 font-semibold">{degradationLabel}</strong>
-                    </span>
-                    <span>Tasa de material: <strong className="font-mono text-white text-[10px]">{manualFactor}x</strong></span>
-                  </div>
-                </div>
-
-                {/* Guía de Gestión y Disposición Final (Checklist) */}
-                <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-2xl p-5 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-[11px] font-mono tracking-wider uppercase font-bold text-emerald-400 flex items-center gap-1.5">
-                      <span>📌 Guía de Gestión y Disposición Final</span>
-                    </h4>
-                    <span className="text-[9px] font-mono text-slate-400">
-                      Criterios de disposición
-                    </span>
-                  </div>
-
-                  {(() => {
-                    const steps = DISPOSAL_STEPS[manualCategory] || [];
-                    const totalSteps = steps.length;
-                    const completedStepsCount = steps.filter((_, idx) => manualCompletedSteps[`${manualCategory}-${idx}`]).length;
-                    const pctProgress = Math.round((completedStepsCount / totalSteps) * 100) || 0;
-                    const allDone = completedStepsCount === totalSteps;
-
-                    return (
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between text-[10px] text-slate-450 font-mono">
-                          <span>Progreso de Preparación</span>
-                          <span className="text-emerald-300 font-bold">{completedStepsCount} / {totalSteps} ({pctProgress}%)</span>
-                        </div>
-                        <div className="w-full bg-slate-900 border border-white/5 rounded-full overflow-hidden h-1.5 relative">
-                          <div 
-                            className="bg-gradient-to-r from-emerald-500 to-teal-400 h-full transition-all duration-300"
-                            style={{ width: `${pctProgress}%` }}
-                          />
-                        </div>
-
-                        <div className="space-y-2 mt-3">
-                          {steps.map((step, idx) => {
-                            const stepKey = `${manualCategory}-${idx}`;
-                            const isStepDone = !!manualCompletedSteps[stepKey];
-                            return (
-                              <div
-                                key={idx}
-                                onClick={() => {
-                                  setManualCompletedSteps(prev => ({
-                                    ...prev,
-                                    [stepKey]: !prev[stepKey]
-                                  }));
-                                }}
-                                className={`p-3 rounded-xl border transition-all duration-200 cursor-pointer flex items-start gap-3 select-none text-[11px] ${
-                                  isStepDone 
-                                    ? "bg-white/5 border-white/5 text-slate-500 line-through decoration-slate-650"
-                                    : "bg-emerald-500/5 border-emerald-500/10 text-slate-200 hover:border-emerald-500/30"
-                                }`}
-                              >
-                                <span className={`w-4.5 h-4.5 rounded-md border flex items-center justify-center shrink-0 text-[10px] transition-all ${
-                                  isStepDone 
-                                    ? "bg-emerald-600 border-emerald-500 text-white" 
-                                    : "bg-slate-950/40 border-white/20 text-transparent"
-                                }`}>
-                                  ✓
-                                </span>
-                                
-                                <div className="flex-1 leading-normal">
-                                  <strong className={`${isStepDone ? 'text-slate-500' : 'text-emerald-300'} font-semibold mr-1`}>{step.title}:</strong>
-                                  <span className={`${isStepDone ? 'text-slate-500' : 'text-slate-300'}`}>{step.desc}</span>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-
-                        {allDone && (
-                          <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-[10px] text-emerald-300 flex items-center gap-2">
-                            <span>🌱</span>
-                            <span>¡Excelente! Residuo preparado correctamente para su disposición circular.</span>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })()}
-                </div>
-
-                {/* Submitting act button */}
-                <div className="pt-2 flex flex-col sm:flex-row gap-3">
-                  <button
-                    type="button"
-                    onClick={handleSaveManualRecord}
-                    className="flex-1 bg-emerald-550 border border-emerald-500 hover:bg-emerald-500 text-white font-bold text-xs py-3.5 px-6 rounded-xl flex items-center justify-center gap-2 transition active:scale-[0.98] shadow-lg shadow-emerald-950/20 cursor-pointer"
-                  >
-                    <PlusCircle className="w-4 h-4 shrink-0 text-emerald-100" />
-                    <span>Registrar en el Diario de Reciclaje</span>
-                  </button>
-                </div>
-
-              </div>
             )}
 
           </section>
 
-          {/* RIGHT PANEL: STATISTICS & RECYCLING HISTORY LOG (5 Columns) */}
+          {/* RIGHT PANEL: ECO-STATS SUMMARY & RECENT LOG (5 Columns) */}
           <section className="lg:col-span-5 space-y-6">
             
-            {/* Quick Informational card */}
-            <div className="bg-emerald-500/10 backdrop-blur-2xl border border-emerald-500/20 text-white rounded-3xl p-6 shadow-xl relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-36 h-36 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center text-emerald-350 border border-white/10 shadow">
-                  <Sparkles className="w-5 h-5 text-emerald-400" />
-                </div>
-                <div>
-                  <h3 className="text-xs font-bold tracking-tight text-emerald-300 uppercase font-mono">Consumo Responsable</h3>
-                  <h2 className="text-sm font-bold font-display text-white">Comunidad Verde AI</h2>
-                </div>
-              </div>
-              <p className="text-xs text-slate-200 leading-relaxed font-sans">
-                Esta herramienta inteligente analiza la firma física de los residuos para guiar su correcto encauce circular. ¡Clasificar correctamente evita la acumulación de plásticos en océanos y ahorra toneladas de CO₂!
-              </p>
-            </div>
+            {/* Aggregate Recycling Impact Stats */}
+            <RecyclingStats history={history} />
 
-            {/* General historical statistics component */}
-            <RecyclingStats 
-              history={history}
-              onClearHistory={handleClearHistory}
-              onSelectItem={handleSelectItemFromLog}
-            />
+            {/* Scan History Log Card */}
+            <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 shadow-2xl relative overflow-hidden">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-4 bg-teal-500 rounded-full" />
+                  <h3 className="text-sm font-bold font-display text-white">
+                    Historial Reciente
+                  </h3>
+                </div>
+                {history.length > 0 && (
+                  <button
+                    onClick={handleClearHistory}
+                    className="text-[10px] text-slate-400 hover:text-red-400 transition cursor-pointer flex items-center gap-1 bg-white/5 hover:bg-red-500/10 px-2.5 py-1 rounded-lg border border-white/5 hover:border-red-500/20"
+                  >
+                    <Trash2 className="w-3 h-3" /> Limpiar Log
+                  </button>
+                )}
+              </div>
+
+              {history.length === 0 ? (
+                <div className="text-center py-8 px-4 border border-white/5 rounded-2xl bg-slate-900/40">
+                  <Footprints className="w-8 h-8 text-slate-600 mx-auto mb-2" />
+                  <p className="text-xs text-slate-400 font-sans">
+                    Aún no has registrado ningún escaneo.
+                  </p>
+                  <p className="text-[10px] text-slate-500 mt-1">
+                    Sube una foto o utiliza la calculadora para comenzar.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2.5 max-h-[380px] overflow-y-auto pr-1 custom-scrollbar">
+                  {history.map((item) => {
+                    const primaryClass = item.classifications?.[0];
+                    const itemCat = primaryClass?.recyclingCategory || "other";
+                    const itemTheme = CATEGORY_THEMES[itemCat] || CATEGORY_THEMES.other;
+                    
+                    return (
+                      <div
+                        key={item.id}
+                        onClick={() => handleSelectItemFromLog(item)}
+                        className="p-3 bg-slate-900/60 hover:bg-white/10 border border-white/5 hover:border-emerald-500/30 rounded-2xl transition cursor-pointer flex items-center justify-between group"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          {item.imageUrl === "manual" ? (
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border text-lg ${itemTheme.bg} ${itemTheme.border}`}>
+                              <span>{itemTheme.icon}</span>
+                            </div>
+                          ) : (
+                            <img
+                              src={item.imageUrl}
+                              alt="Log thumbnail"
+                              className="w-10 h-10 rounded-xl object-cover shrink-0 border border-white/10"
+                            />
+                          )}
+                          <div className="min-w-0">
+                            <h4 className="text-xs font-bold text-white font-display truncate group-hover:text-emerald-300 transition">
+                              {primaryClass?.spanishMaterialName || "Residuo procesado"}
+                            </h4>
+                            <p className="text-[9px] text-slate-400 font-mono mt-0.5 flex items-center gap-1">
+                              <span>{new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                              <span>•</span>
+                              <span className="text-emerald-400">{itemTheme.label}</span>
+                            </p>
+                          </div>
+                        </div>
+
+                        <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-emerald-400 group-hover:translate-x-0.5 transition shrink-0" />
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
 
           </section>
 
@@ -2130,8 +2048,9 @@ export default function App() {
 
       </main>
 
-      {/* Floating Animated Companion Overlay */}
+      {/* Floating Interactive Companion (Ambientalito Frog) */}
       <AmbientalitoCompanion />
+
     </div>
   );
 }
