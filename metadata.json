@@ -1,0 +1,6 @@
+{
+  "name": "Clasificador de Residuos",
+  "description": "Una aplicación inteligente para la clasificación de residuos y reciclaje usando IA. Escanea o sube fotos para aprender a reciclar correctamente, calcular el ahorro ecológico y encontrar puntos de reciclaje.",
+  "requestFramePermissions": ["geolocation", "camera", "microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
